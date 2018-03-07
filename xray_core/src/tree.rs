@@ -81,7 +81,7 @@ impl<'a, T: Item> Tree<T> {
 
     fn summarize_children(children: &[Tree<T>]) -> T::Summary {
         let mut summary = T::Summary::default();
-        for ref child in children {
+        for child in children {
             summary += child.summary();
         }
         summary
@@ -147,8 +147,8 @@ impl<'a, T: Item> Tree<T> {
     }
 
     fn append_children(&mut self, new_children: &[Tree<T>]) -> Option<Tree<T>> {
-        match Arc::make_mut(&mut self.0) {
-            &mut Node::Internal { ref mut children, ref mut summary, ref mut rightmost_leaf, .. } => {
+        match *Arc::make_mut(&mut self.0) {
+            Node::Internal { ref mut children, ref mut summary, ref mut rightmost_leaf, .. } => {
                 let child_count = children.len() + new_children.len();
                 if child_count > MAX_CHILDREN {
                     let midpoint = (child_count + child_count % 2) / 2;
@@ -165,7 +165,7 @@ impl<'a, T: Item> Tree<T> {
                     None
                 }
             }
-            &mut Node::Leaf { .. } => panic!("Tried to append children to a leaf node")
+            Node::Leaf { .. } => panic!("Tried to append children to a leaf node")
         }
     }
 
@@ -183,8 +183,8 @@ impl<'a, T: Item> Tree<T> {
     }
 
     fn append_subsequence_recursive<D: Dimension<Summary=T::Summary>>(&self, result: &mut Self, node_start: D, start: &D, end: &D) {
-        match self.0.as_ref() {
-            &Node::Internal {ref summary, ref children, ..} => {
+        match *self.0.as_ref() {
+            Node::Internal {ref summary, ref children, ..} => {
                 let node_end = node_start.clone() + &D::from_summary(summary);
                 if *start <= node_start && node_end <= *end {
                     result.push_tree(self.clone());
@@ -196,7 +196,7 @@ impl<'a, T: Item> Tree<T> {
                     }
                 }
             }
-            &Node::Leaf {..} => {
+            Node::Leaf {..} => {
                 if *start <= node_start && node_start < *end {
                     result.push_tree(self.clone());
                 }
@@ -205,72 +205,72 @@ impl<'a, T: Item> Tree<T> {
     }
 
     fn rightmost_leaf(&self) -> Option<&Tree<T>> {
-        match self.0.as_ref() {
-            &Node::Internal { ref rightmost_leaf, .. } => rightmost_leaf.as_ref(),
-            &Node::Leaf { .. } => Some(self)
+        match *self.0.as_ref() {
+            Node::Internal { ref rightmost_leaf, .. } => rightmost_leaf.as_ref(),
+            Node::Leaf { .. } => Some(self)
         }
     }
 
     fn rightmost_leaf_mut(&mut self) -> &mut Option<Tree<T>> {
-        match Arc::make_mut(&mut self.0) {
-            &mut Node::Internal { ref mut rightmost_leaf, .. } => rightmost_leaf,
+        match *Arc::make_mut(&mut self.0) {
+            Node::Internal { ref mut rightmost_leaf, .. } => rightmost_leaf,
             _ => panic!("Requested a mutable reference to the rightmost leaf of a non-internal node"),
         }
     }
 
     fn summary(&self) -> &T::Summary {
-        match self.0.as_ref() {
-            &Node::Internal { ref summary, .. } => summary,
-            &Node::Leaf { ref summary, .. } => summary,
+        match *self.0.as_ref() {
+            Node::Internal { ref summary, .. } => summary,
+            Node::Leaf { ref summary, .. } => summary,
         }
     }
 
     fn summary_mut(&mut self) -> &mut T::Summary {
-        match Arc::make_mut(&mut self.0) {
-            &mut Node::Internal { ref mut summary, .. } => summary,
-            &mut Node::Leaf { ref mut summary, .. } => summary,
+        match *Arc::make_mut(&mut self.0) {
+            Node::Internal { ref mut summary, .. } => summary,
+            Node::Leaf { ref mut summary, .. } => summary,
         }
     }
 
     fn children(&self) -> &[Tree<T>] {
-        match self.0.as_ref() {
-            &Node::Internal { ref children, .. } => children.as_slice(),
-            &Node::Leaf { .. } => panic!("Requested children of a leaf node")
+        match *self.0.as_ref() {
+            Node::Internal { ref children, .. } => children.as_slice(),
+            Node::Leaf { .. } => panic!("Requested children of a leaf node")
         }
     }
 
     fn last_child_mut(&mut self) -> &mut Tree<T> {
-        match Arc::make_mut(&mut self.0) {
-            &mut Node::Internal { ref mut children, .. } => children.last_mut().unwrap(),
-            &mut Node::Leaf { .. } => panic!("Requested last child of a leaf node")
+        match *Arc::make_mut(&mut self.0) {
+            Node::Internal { ref mut children, .. } => children.last_mut().unwrap(),
+            Node::Leaf { .. } => panic!("Requested last child of a leaf node")
         }
     }
 
     fn value(&self) -> &T {
-        match self.0.as_ref() {
-            &Node::Internal { .. } => panic!("Requested value of an internal node"),
-            &Node::Leaf { ref value, .. } => value,
+        match *self.0.as_ref() {
+            Node::Internal { .. } => panic!("Requested value of an internal node"),
+            Node::Leaf { ref value, .. } => value,
         }
     }
 
     fn underflowing(&self) -> bool {
-        match self.0.as_ref() {
-            &Node::Internal { ref children, ..} => children.len() < MIN_CHILDREN,
-            &Node::Leaf { .. } => false
+        match *self.0.as_ref() {
+            Node::Internal { ref children, ..} => children.len() < MIN_CHILDREN,
+            Node::Leaf { .. } => false
         }
     }
 
     fn is_empty(&self) -> bool {
-        match self.0.as_ref() {
-            &Node::Internal { ref children, ..} => children.len() == 0,
-            &Node::Leaf { .. } => false
+        match *self.0.as_ref() {
+            Node::Internal { ref children, ..} => children.len() == 0,
+            Node::Leaf { .. } => false
         }
     }
 
     fn height(&self) -> u16 {
-        match self.0.as_ref() {
-            &Node::Internal { height, ..} => height,
-            &Node::Leaf { .. } => 0
+        match *self.0.as_ref() {
+            Node::Internal { height, ..} => height,
+            Node::Leaf { .. } => 0
         }
     }
 }
@@ -559,10 +559,10 @@ mod tests {
     #[test]
     fn test_extend_and_push() {
         let mut tree1 = Tree::new();
-        tree1.extend((1..20));
+        tree1.extend(1..20);
 
         let mut tree2 = Tree::new();
-        tree2.extend((1..50));
+        tree2.extend(1..50);
 
         tree1.push_tree(tree2);
 
