@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "dev", feature(test))]
+
 extern crate rand;
 extern crate futures;
 

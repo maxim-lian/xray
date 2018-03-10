@@ -1,3 +1,6 @@
+#[cfg(feature = "dev")]
+extern crate test;
+
 use std::cmp;
 use std::collections::HashSet;
 use std::iter;
@@ -500,6 +503,9 @@ fn find_insertion_index<T: Ord>(v: &Vec<T>, x: &T) -> usize {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "dev")]
+    use super::test::Bencher;
+
     impl Buffer {
         fn to_string(&self) -> String {
             String::from_utf16_lossy(self.iter().collect::<Vec<u16>>().as_slice())
@@ -609,5 +615,28 @@ mod tests {
                 assert_eq!(ids, sorted_ids);
             }
         }
+    }
+
+    #[bench]
+    fn bench_test(b: &mut Bencher) {
+        let mut buffer = Buffer::new(1);
+        b.iter(|| {
+            for seed in 0..100 {
+                use rand::{Rng, SeedableRng, StdRng};
+                let mut rng = StdRng::from_seed(&[seed]);
+
+                let mut ids = vec![FragmentId(vec![0]), FragmentId(vec![4])];
+                for _i in 0..100 {
+                    let index = rng.gen_range::<usize>(1, ids.len());
+
+                    let left = ids[index - 1].clone();
+                    let right = ids[index].clone();
+                    ids.insert(index, FragmentId::between_with_max(&left, &right, 4));
+
+                    let mut sorted_ids = ids.clone();
+                    sorted_ids.sort()
+                }
+            }
+        });
     }
 }
